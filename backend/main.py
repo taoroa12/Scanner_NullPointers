@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.scan_routes import router as scan_router
+from api.rules_routes import router as rules_router
 
 app = FastAPI(
     title="Secret Scanner API",
@@ -19,6 +20,7 @@ app.add_middleware(
 
 # Регистрируем роуты
 app.include_router(scan_router)
+app.include_router(rules_router)
 
 @app.get("/")
 def health_check():
