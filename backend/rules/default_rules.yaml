@@ -1,0 +1,294 @@
+# default_rules.yaml - 20+ правил для поиска секретов
+
+# === AWS ===
+- name: "AWS Access Key ID"
+  pattern: "AKIA[0-9A-Z]{16}"
+  risk_level: "HIGH"
+  secret_type: "AWS_KEY"
+  description: "AWS Access Key ID (начинается с AKIA)"
+  recommendation: |
+    Никогда не храните AWS ключи в коде!
+    
+    Как исправить:
+    1. Используйте AWS IAM roles для EC2
+    2. Или храните в ~/.aws/credentials
+    3. Или используйте переменные окружения:
+       export AWS_ACCESS_KEY_ID=ваш_ключ
+    4. В коде: os.getenv('AWS_ACCESS_KEY_ID')
+
+- name: "AWS Secret Key"
+  pattern: "(?i)aws[_-]?secret[_-]?key\\s*[:=]\\s*['\"]?([a-zA-Z0-9/+]{40})['\"]?"
+  risk_level: "HIGH"
+  secret_type: "AWS_KEY"
+  description: "AWS Secret Access Key"
+  recommendation: |
+    AWS Secret Key должен храниться в безопасном месте!
+    
+    Решение:
+    - Используйте AWS Secrets Manager
+    - Или переменные окружения
+    - Никогда не коммитьте в git
+
+# === GitHub ===
+- name: "GitHub Personal Token"
+  pattern: "ghp_[a-zA-Z0-9]{36}"
+  risk_level: "HIGH"
+  secret_type: "TOKEN"
+  description: "GitHub Personal Access Token"
+  recommendation: |
+    Скомпрометированный GitHub токен дает доступ к вашему коду!
+    
+    Действия:
+    1. Немедленно отзовите токен в GitHub
+    2. Используйте GitHub Actions secrets
+    3. Для локальной разработки: .env файл в .gitignore
+
+- name: "GitHub OAuth Token"
+  pattern: "gho_[a-zA-Z0-9]{36}"
+  risk_level: "HIGH"
+  secret_type: "TOKEN"
+  description: "GitHub OAuth Token"
+  recommendation: "Используйте GitHub App или OAuth App с ограниченными правами"
+
+- name: "GitHub Refresh Token"
+  pattern: "ghr_[a-zA-Z0-9]{36}"
+  risk_level: "HIGH"
+  secret_type: "TOKEN"
+  description: "GitHub Refresh Token"
+  recommendation: "Храните в безопасном хранилище, используйте короткоживущие токены"
+
+# === API Keys ===
+- name: "Google API Key"
+  pattern: "AIza[0-9A-Za-z\\-_]{35}"
+  risk_level: "HIGH"
+  secret_type: "API_KEY"
+  description: "Google API Key"
+  recommendation: |
+    Google API ключи должны быть ограничены по IP и сервисам!
+    
+    Настройте в Google Cloud Console:
+    - Ограничьте ключ по IP адресам
+    - Ограничьте по API сервисам
+    - Используйте Service Accounts вместо API keys
+
+- name: "Slack Token"
+  pattern: "xox[baprs]-[0-9]{12}-[0-9]{12}-[a-zA-Z0-9]{24}"
+  risk_level: "HIGH"
+  secret_type: "TOKEN"
+  description: "Slack API Token"
+  recommendation: "Используйте Slack App с минимальными правами, храните в переменных окружения"
+
+- name: "Stripe Live Key"
+  pattern: "sk_live_[0-9a-zA-Z]{24}"
+  risk_level: "HIGH"
+  secret_type: "API_KEY"
+  description: "Stripe Live Secret Key"
+  recommendation: |
+    ⚠️ LIVE ключ Stripe дает доступ к реальным деньгам!
+    
+    Немедленно:
+    1. Отзовите ключ в Stripe Dashboard
+    2. Используйте Stripe CLI для локальной разработки
+    3. Для продакшна: храните в Stripe Secrets Manager
+
+- name: "Stripe Test Key"
+  pattern: "sk_test_[0-9a-zA-Z]{24}"
+  risk_level: "MEDIUM"
+  secret_type: "API_KEY"
+  description: "Stripe Test Secret Key"
+  recommendation: "Используйте переменные окружения, не коммитьте в репозиторий"
+
+- name: "Twilio API Key"
+  pattern: "SK[0-9a-fA-F]{32}"
+  risk_level: "HIGH"
+  secret_type: "API_KEY"
+  description: "Twilio API Key"
+  recommendation: "Используйте Twilio Functions для серверного кода, храните ключи в переменных окружения"
+
+# === Database ===
+- name: "PostgreSQL Connection String"
+  pattern: "postgres(?:ql)?://[^:]+:[^@]+@[^:]+:\\d+/\\w+"
+  risk_level: "HIGH"
+  secret_type: "PASSWORD"
+  description: "PostgreSQL connection string with password"
+  recommendation: |
+    Никогда не храните пароли БД в коде!
+    
+    Решения:
+    1. Используйте переменные окружения
+    2. Для продакшна: AWS RDS IAM authentication
+    3. Локально: .env файл в .gitignore
+
+- name: "MySQL Connection String"
+  pattern: "mysql://[^:]+:[^@]+@[^:]+:\\d+/\\w+"
+  risk_level: "HIGH"
+  secret_type: "PASSWORD"
+  description: "MySQL connection string with password"
+  recommendation: "Используйте Secrets Manager или переменные окружения"
+
+- name: "MongoDB Connection String"
+  pattern: "mongodb(?:\\+srv)?://[^:]+:[^@]+@[^:]+/\\w+"
+  risk_level: "HIGH"
+  secret_type: "PASSWORD"
+  description: "MongoDB connection string with password"
+  recommendation: "Храните в переменных окружения, используйте MongoDB Atlas with VPC peering"
+
+- name: "Redis URL"
+  pattern: "redis://:[^@]+@[^:]+:\\d+"
+  risk_level: "MEDIUM"
+  secret_type: "PASSWORD"
+  description: "Redis URL with password"
+  recommendation: "Используйте Redis with ACL и переменные окружения"
+
+# === JWT & Tokens ===
+- name: "JWT Token"
+  pattern: "eyJ[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+"
+  risk_level: "MEDIUM"
+  secret_type: "TOKEN"
+  description: "JWT Token"
+  recommendation: |
+    JWT токены в коде - плохая практика!
+    
+    Что делать:
+    - Используйте короткоживущие токены
+    - Храните в памяти, не в файлах
+    - Для серверных приложений: используйте сессии
+
+- name: "Bearer Token"
+  pattern: "(?i)bearer\\s+[a-zA-Z0-9_\\-\\.]{20,}"
+  risk_level: "MEDIUM"
+  secret_type: "TOKEN"
+  description: "Bearer Authentication Token"
+  recommendation: "Токены должны передаваться в заголовках, не храниться в коде"
+
+# === Private Keys ===
+- name: "RSA Private Key"
+  pattern: "-----BEGIN RSA PRIVATE KEY-----"
+  risk_level: "HIGH"
+  secret_type: "PRIVATE_KEY"
+  description: "RSA Private Key"
+  recommendation: |
+    ⚠️ Приватный ключ - доступ к серверам!
+    
+    Немедленно:
+    1. Отзовите ключ
+    2. Используйте SSH агент
+    3. Для серверов: используйте IAM роли
+    4. Храните ключи в HashiCorp Vault
+
+- name: "SSH Private Key"
+  pattern: "-----BEGIN OPENSSH PRIVATE KEY-----"
+  risk_level: "HIGH"
+  secret_type: "PRIVATE_KEY"
+  description: "SSH Private Key"
+  recommendation: |
+    SSH ключи не должны быть в репозитории!
+    
+    Используйте:
+    - ssh-agent
+    - deploy keys с ограниченным доступом
+    - GitHub Actions secrets для CI/CD
+
+- name: "PGP Private Key"
+  pattern: "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+  risk_level: "HIGH"
+  secret_type: "PRIVATE_KEY"
+  description: "PGP Private Key"
+  recommendation: "Храните на защищенных носителях, используйте смарт-карты"
+
+# === Generic Secrets ===
+- name: "Password in Code"
+  pattern: "(?i)(password|passwd|pwd)\\s*[:=]\\s*['\"]?([^'\"\\s]{8,})['\"]?"
+  risk_level: "MEDIUM"
+  secret_type: "PASSWORD"
+  description: "Hardcoded password"
+  recommendation: |
+    Хардкод паролей - антипаттерн!
+    
+    Альтернативы:
+    1. Переменные окружения
+    2. Secrets Manager (AWS/GCP/Azure)
+    3. HashiCorp Vault
+    4. Для тестов: используйте .env.example без реальных паролей
+
+- name: "API Key in Code"
+  pattern: "(?i)(api[_-]?key|apikey|api_secret)\\s*[:=]\\s*['\"]?([a-zA-Z0-9_\\-]{16,64})['\"]?"
+  risk_level: "MEDIUM"
+  secret_type: "API_KEY"
+  description: "Hardcoded API Key"
+  recommendation: |
+    API ключи должны быть конфигурируемыми!
+    
+    Лучшие практики:
+    - Переменные окружения
+    - Конфиг файлы вне репозитория
+    - Используйте API Gateway с авторизацией
+
+- name: "OAuth Client Secret"
+  pattern: "(?i)(client_secret|oauth_secret)\\s*[:=]\\s*['\"]?([a-zA-Z0-9_\\-]{16,})['\"]?"
+  risk_level: "HIGH"
+  secret_type: "TOKEN"
+  description: "OAuth Client Secret"
+  recommendation: |
+    OAuth Client Secret = доступ к OAuth flow!
+    
+    Защита:
+    - Храните в безопасном хранилище
+    - Используйте PKCE для public clients
+    - Регулярно ротируйте секреты
+
+# === Tokens with entropy ===
+- name: "High Entropy String (Hex)"
+  pattern: "[a-fA-F0-9]{32,}"
+  risk_level: "LOW"
+  secret_type: "GENERIC"
+  description: "Potential hex-encoded secret (32+ chars)"
+  entropy_threshold: 3.5
+  recommendation: |
+    Строка с высокой энтропией может быть секретом.
+    
+    Проверьте:
+    - Это не хеш (MD5, SHA) - они тоже секреты?
+    - Используйте структурный анализ
+    - Если это ключ - переместите в переменные окружения
+
+- name: "High Entropy String (Base64)"
+  pattern: "[a-zA-Z0-9+/]{40,}={0,2}"
+  risk_level: "LOW"
+  secret_type: "GENERIC"
+  description: "Potential base64-encoded secret (40+ chars)"
+  entropy_threshold: 4.5
+  recommendation: |
+    Base64 строка с высокой энтропией.
+    
+    Действия:
+    1. Декодируйте для проверки содержимого
+    2. Если это ключ/токен - используйте безопасное хранение
+    3. Если это данные - зашифруйте их
+
+# === Docker & Cloud ===
+- name: "Docker Registry Password"
+  pattern: "https?://[^:]+:[^@]+@[^/]+/v[12]/"
+  risk_level: "HIGH"
+  secret_type: "PASSWORD"
+  description: "Docker registry credentials in URL"
+  recommendation: |
+    Не используйте пароли в registry URLs!
+    
+    Решение:
+    - Используйте docker login
+    - Для CI/CD: используйте secrets
+    - Для Kubernetes: imagePullSecrets
+
+- name: "Service Account Key"
+  pattern: "{\\s*\"type\":\\s*\"service_account\"[^}]*\"private_key\":\\s*\"-----BEGIN PRIVATE KEY-----"
+  risk_level: "HIGH"
+  secret_type: "PRIVATE_KEY"
+  description: "Google Service Account Key"
+  recommendation: |
+    Service Account ключи дают доступ к Google Cloud!
+    
+    Альтернативы:
+    1. Используйте Workload Identity Federation
+    2. Для GKE: используйте Workload Identity
+    3. Для локальной разработки: gcloud auth application-default login

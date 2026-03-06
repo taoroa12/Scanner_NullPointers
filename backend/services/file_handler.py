@@ -56,3 +56,21 @@ class FileHandler:
         path = os.path.join(self.base_temp_dir, scan_id)
         if os.path.exists(path):
             shutil.rmtree(path)
+
+    def get_supported_extensions(self):
+        """Возвращает список поддерживаемых расширений"""
+        return [
+            '.py', '.js', '.jsx', '.ts', '.tsx',
+            '.yaml', '.yml', '.json', '.xml', '.toml', '.ini', '.conf',
+            '.env', '.properties',
+            '.md', '.txt',
+            '.go', '.java', '.php', '.rb', '.rs', '.c', '.cpp', '.h',
+            '.sh', '.bash', '.zsh', '.fish', '.ps1',
+            '.sql',
+            '.dockerfile', '.Dockerfile',
+            '.gitignore', '.gitconfig',
+            '.html', '.css', '.scss',
+            '.tf', '.tfvars',
+            '.rb', '.rake',
+            '.swift', '.kt'
+        ]
