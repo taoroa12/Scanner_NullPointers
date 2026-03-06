@@ -22,6 +22,14 @@ async def upload_and_scan(file: Annotated[UploadFile, File(description="ZIP arch
     scan_id = str(uuid.uuid4())[:8]
     zip_content = await file.read()
     
+    
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # Лимит 100 мб
+    if len(zip_content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413, 
+            detail="Файл слишком большой. Максимальный размер архива — 100 МБ."
+        )
+    
     # 1. Распаковываем
     extracted_dir = file_handler.extract_zip(zip_content, scan_id)
     
