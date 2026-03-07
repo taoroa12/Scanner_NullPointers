@@ -185,7 +185,7 @@ async def get_scan_report(scan_id: str):
 
 @router.get("/{scan_id}/export")
 async def export_report(scan_id: str, format: str = "json"):
-    """Экспорт в CSV."""
+    """Экспорт в CSV или JSON."""
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
         
@@ -198,5 +198,11 @@ async def export_report(scan_id: str, format: str = "json"):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment; filename=report_{scan_id}.csv"}
         )
-    
-    return result
+    else:
+        # Для формата JSON отдаем как ФАЙЛ для скачивания
+        json_data = result.model_dump_json() # сериализуем в строку Pydantic V2
+        return Response(
+            content=json_data,
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=report_{scan_id}.json"}
+        )

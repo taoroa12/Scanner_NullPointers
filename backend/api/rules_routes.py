@@ -4,11 +4,9 @@ from typing import List, Literal
 import uuid
 import re
 
-from services.rules_manager import RulesManager  # ← ДОБАВЬ ЭТОТ ИМПОРТ
+from services.rules_manager import RulesManager
 
-router = APIRouter(prefix="/api/rules", tags=["Rules (Mock)"])
-
-# Создаем экземпляр RulesManager для работы с YAML правилами
+router = APIRouter(prefix="/api/rules", tags=["Rules"])
 rules_manager = RulesManager()
 
 class RuleResponse(BaseModel):
@@ -25,62 +23,35 @@ class RuleCreate(BaseModel):
 
 @router.get("/", response_model=List[RuleResponse])
 async def get_all_rules():
-    """Возвращает все правила из YAML + системные"""
-    
-    # Загружаем правила из YAML через RulesManager
+    """Возвращает все активные правила из YAML"""
     yaml_rules = rules_manager.get_enabled_rules()
-    
-    # Конвертируем в формат ответа
     rules_response = []
     
-    # Добавляем системные правила (из MOCK_RULES)
-    rules_response.append({
-        "id": "sys-1",
-        "name": "AWS Access Key",
-        "pattern": "AKIA[0-9A-Z]{16}",
-        "severity": "critical",
-        "is_custom": False
-    })
-    
-    rules_response.append({
-        "id": "sys-2",
-        "name": "Slack Token",
-        "pattern": "xoxb-[0-9a-zA-Z\\-]+",
-        "severity": "high",
-        "is_custom": False
-    })
-    
-    # Добавляем правила из YAML
-    for i, rule in enumerate(yaml_rules, start=3):
-        # Конвертируем risk_level в severity
+    for i, rule in enumerate(yaml_rules, start=1):
+        # Конвертируем RiskLevel в severity
         severity_map = {
-            "high": "critical" if rule.name == "AWS Access Key" else "high",
+            "high": "critical" if rule.name == "AWS Access Key ID" else "high",
             "medium": "medium",
             "low": "low"
         }
         
-        rules_response.append({
-            "id": f"rule-{i}",
-            "name": rule.name,
-            "pattern": rule.pattern,
-            "severity": severity_map.get(rule.risk_level.value, "medium"),
-            "is_custom": False
-        })
+        rules_response.append(RuleResponse(
+            id=f"sys-{i}",
+            name=rule.name,
+            pattern=rule.pattern,
+            severity=severity_map.get(rule.risk_level.value, "medium"),
+            is_custom=False
+        ))
     
     return rules_response
 
 @router.post("/", response_model=RuleResponse)
 async def add_custom_rule(rule_data: RuleCreate):
-    """Добавляет пользовательское правило"""
-    
-    # Проверка регулярного выражения
+    """Добавляет пользовательское правило (моковое сохранение для фронтенда)"""
     try:
         re.compile(rule_data.pattern)
     except re.error:
-        raise HTTPException(status_code=400, detail="Invalid Regex")
-    
-    # Здесь можно добавить сохранение в БД или файл
-    # Пока просто возвращаем созданное правило
+        raise HTTPException(status_code=400, detail="Invalid Regex pattern")
     
     new_rule = RuleResponse(
         id=f"cust-{str(uuid.uuid4())[:6]}",
@@ -89,16 +60,12 @@ async def add_custom_rule(rule_data: RuleCreate):
         severity=rule_data.severity,
         is_custom=True
     )
-    
     return new_rule
 
 @router.delete("/{rule_id}")
 async def delete_rule(rule_id: str):
     """Удаляет правило (только кастомные)"""
-    
     if rule_id.startswith("sys-"):
         raise HTTPException(status_code=400, detail="Cannot delete system rules")
-    
-    # Здесь должна быть логика удаления из БД/файла
     
     return {"status": "deleted", "id": rule_id}
