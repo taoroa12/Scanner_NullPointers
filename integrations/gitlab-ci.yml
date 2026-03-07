@@ -1,0 +1,52 @@
+stages:
+  - security_scan
+  - build
+  - deploy
+
+# Настройка джоба (задачи) сканирования безопасности
+secret_scanning:
+  stage: security_scan
+  
+  # Используем легковесный образ Python
+  image: python:3.11-slim
+  
+  variables:
+    # Путь к директории с проектом для сканирования (точка = весь репозиторий)
+    SCAN_TARGET_DIR: "."
+  
+  before_script:
+    # Установка зависимостей нашего сканера
+    - echo "⚙️ Установка Secret Scanner..."
+    - pip install --no-cache-dir -r backend/requirements.txt
+  
+  script:
+    - echo "🔍 Запуск автоматического сканирования репозитория..."
+    
+    # Запускаем CLI версию сканера и сохраняем подробный текстовый лог
+    - python backend/cli.py $SCAN_TARGET_DIR --format text > secret-scan-report.log
+    
+    # Запускаем сканер второй раз для генерации машиночитаемого JSON (артефакт)
+    - python backend/cli.py $SCAN_TARGET_DIR --format json > secret-scan-report.json
+    
+    # АВТОМАТИЧЕСКАЯ БЛОКИРОВКА СБОРКИ
+    # Проверяем, есть ли в логах уязвимости уровня CRITICAL или HIGH
+    - |
+      if grep -q -e "\[CRITICAL\]" -e "\[HIGH\]" secret-scan-report.log; then
+        echo "❌ ВНИМАНИЕ: Сборка остановлена! Обнаружена утечка критических секретов (API-ключи, пароли, приватные ключи)."
+        echo "Пожалуйста, изучите отчет 'secret-scan-report.log' в артефактах сборки."
+        exit 1
+      else
+        echo "✅ Проверка безопасности пройдена. Критических утечек не найдено."
+        exit 0
+      fi
+  
+  # Сохраняем отчеты на сервере GitLab на 1 неделю, чтобы безопасники могли их скачать
+  artifacts:
+    when: always
+    paths:
+      - secret-scan-report.log
+      - secret-scan-report.json
+    expire_in: 1 week
+    
+  # false означает, что пайплайн будет КРАСНЫМ (упадет), если скрипт завершится с ошибкой (exit 1)
+  allow_failure: false
