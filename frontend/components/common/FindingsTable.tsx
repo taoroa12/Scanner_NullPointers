@@ -27,64 +27,70 @@ const FindingsTable = ({ findings, onOpen }: { findings: Finding[], onOpen: (f: 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full overflow-hidden">
+      {/* Шапка таблицы */}
       <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-        <div className="col-span-5">Файл</div>
-        <div className="col-span-1">Строка</div>
+        <div className="col-span-4">Файл и строка</div>
         <div className="col-span-3">Тип секрета</div>
         <div className="col-span-2">Критичность</div>
-        <div className="col-span-1"></div>
+        <div className="col-span-3">Найденное значение</div>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-3 w-full">
         {findings.map((f, idx) => (
           <Card 
             key={f.id || idx} 
-            className="group hover:border-primary/30 transition-all duration-300 cursor-pointer active:scale-[0.99]"
+            className="group hover:border-primary/30 transition-all duration-300 cursor-pointer active:scale-[0.99] w-full overflow-hidden"
             onClick={() => onOpen(f)}
           >
-            <CardContent className="p-4 md:px-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                <div className="col-span-1 md:col-span-5 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-secondary/50 group-hover:bg-primary/10 transition-colors">
+            <CardContent className="p-4 md:px-6 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center w-full">
+                
+                {/* Файл и строка */}
+                <div className="col-span-1 md:col-span-4 flex items-center gap-3 min-w-0">
+                  <div className="p-2 shrink-0 rounded-lg bg-secondary/50 group-hover:bg-primary/10 transition-colors">
                     <FileCode className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-medium truncate" title={f.file_path}>
-                      {f.file_path.split('/').pop()}
+                      {f.file_path.split(/[\/\\]/).pop()} 
+                      <span className="text-muted-foreground ml-2 text-xs">L:{f.line_number}</span>
                     </span>
-                    <span className="text-xs text-muted-foreground truncate opacity-60">
+                    <span className="text-xs text-muted-foreground truncate opacity-60" title={f.file_path}>
                       {f.file_path}
                     </span>
                   </div>
                 </div>
 
-                {/* Line Number */}
-                <div className="col-span-1 md:col-span-1 flex md:justify-start items-center">
-                  <span className="text-sm font-mono text-muted-foreground">
-                    L:{f.line_number}
-                  </span>
-                </div>
-
-                <div className="col-span-1 md:col-span-3 flex items-center">
-                  <Badge variant="outline" className="font-mono text-[10px] tracking-tight">
+                {/* Тип секрета */}
+                <div className="col-span-1 md:col-span-3 flex items-center min-w-0">
+                  <Badge variant="outline" className="font-mono text-[10px] tracking-tight truncate">
                     {f.secret_type}
                   </Badge>
                 </div>
 
-                <div className="col-span-1 md:col-span-2 flex items-center">
+                {/* Критичность */}
+                <div className="col-span-1 md:col-span-2 flex items-center shrink-0">
                   <Badge variant={getSeverityVariant(f.severity)} className="capitalize">
                     {f.severity}
                   </Badge>
                 </div>
 
-                {/* <div className="col-span-1 md:col-span-1 flex justify-end">
-                  <div 
-                    className="p-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
-                  >
-                    <ExternalLink className="w-4 h-4" />
+                {/* ЖЕСТКАЯ ЗАЩИТА: Значение и контекст кода */}
+                <div className="col-span-1 md:col-span-3 flex flex-col min-w-0 w-full overflow-hidden">
+                  <div className="text-xs font-mono font-bold text-destructive break-all line-clamp-1" title={f.matched_value}>
+                    {f.matched_value}
                   </div>
-                </div> */}
+                  {f.line_content && (
+                    <div 
+                      className="text-[10px] text-muted-foreground mt-1 break-all line-clamp-2 opacity-70 font-mono bg-muted/50 p-1 rounded w-full"
+                      title={f.line_content}
+                    >
+                      {f.line_content}
+                    </div>
+                  )}
+                </div>
+
               </div>
             </CardContent>
           </Card>

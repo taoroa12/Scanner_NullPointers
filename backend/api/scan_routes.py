@@ -107,7 +107,7 @@ async def upload_and_scan(file: Annotated[UploadFile, File(description="ZIP arch
             secret_masked = f.get('secret_masked', '***')
             file_path = f.get('file_path', 'unknown')
             line_number = f.get('line_number', 0)
-            line_content = f.get('line_content', '')
+            line_content=str(f.get('line_content', ''))[:100] + '...' if len(str(f.get('line_content', ''))) > 100 else str(f.get('line_content', ''))
             encoding_type = f.get('encoding_type', None)
             
             # Создаем базовую рекомендацию
@@ -265,7 +265,7 @@ async def scan_github_repo(req: RepoScanRequest):
                 entropy=entropy,
                 encoding_type=f.get('encoding_type', None),
                 rule_name=rule_name,
-                line_content=f.get('line_content', '')
+                line_content=str(f.get('line_content', ''))[:100] + '...' if len(str(f.get('line_content', ''))) > 100 else str(f.get('line_content', ''))
             ))
             
         # 6. Статистика

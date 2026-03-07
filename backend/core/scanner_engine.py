@@ -109,6 +109,38 @@ class SecretScanner:
                     # Маскируем секрет
                     masked_value = mask_secret(secret_value)
                     
+                                        # УМНАЯ ОБРЕЗКА ДЛИННЫХ СТРОК (Для минифицированного кода)
+                    # Вырезаем контекст: 50 символов до секрета и 50 после
+                    clean_line = line.strip()
+                    if len(clean_line) > 150:
+                        # Находим позицию секрета в строке
+                        match_start = match.start()
+                        match_end = match.end()
+                        
+                        start_idx = max(0, match_start - 50)
+                        end_idx = min(len(clean_line), match_end + 50)
+                        
+                        prefix = "..." if start_idx > 0 else ""
+                        suffix = "..." if end_idx < len(clean_line) else ""
+                        
+                        display_line = f"{prefix}{clean_line[start_idx:end_idx]}{suffix}"
+                    else:
+                        display_line = clean_line
+
+                    # ВОЗВРАЩАЕМ СЛОВАРЬ, а не Finding
+                    finding_dict = {
+                        "file_path": file_path,
+                        "line_number": line_number,
+                        "rule_name": rule_info["name"],
+                        "secret_type": rule_info["secret_type"].value,
+                        "risk_level": risk_level.value,
+                        "secret_masked": masked_value,
+                        "line_content": display_line, # <-- ТЕПЕРЬ ТУТ КРАСИВАЯ ОБРЕЗАННАЯ СТРОКА
+                        "timestamp": datetime.now().isoformat(),
+                        "entropy": entropy_value,
+                        "encoding_type": encoding_type
+                    }
+                    
                     # ВОЗВРАЩАЕМ СЛОВАРЬ, а не Finding
                     finding_dict = {
                         "file_path": file_path,
