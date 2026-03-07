@@ -1,5 +1,4 @@
 # services/rules_manager.py
-
 import yaml
 import re
 from pathlib import Path

@@ -94,16 +94,20 @@ async def upload_and_scan(file: Annotated[UploadFile, File(description="ZIP arch
         recommendations = rules_manager.get_recommendations()
         
         # 6. Конвертируем в формат API
+                # 6. Конвертируем в формат API
         findings = []
         for i, f in enumerate(findings_raw, 1):
-            # Проверяем обязательные поля
-            rule_name = getattr(f, 'rule_name', 'Unknown')
-            risk_level = getattr(f, 'risk_level', None)
-            risk_value = risk_level.value if risk_level else 'medium'
-            entropy = getattr(f, 'entropy', None)
-            secret_masked = getattr(f, 'secret_masked', '***')
-            file_path = getattr(f, 'file_path', 'unknown')
-            line_number = getattr(f, 'line_number', 0)
+            
+            # ДОСТАЕМ ДАННЫЕ ИЗ СЛОВАРЯ (через .get)
+            rule_name = f.get('rule_name', 'Unknown')
+            secret_type = f.get('secret_type', 'generic')
+            risk_value = f.get('risk_level', 'medium')
+            entropy = f.get('entropy', None)
+            secret_masked = f.get('secret_masked', '***')
+            file_path = f.get('file_path', 'unknown')
+            line_number = f.get('line_number', 0)
+            line_content = f.get('line_content', '')
+            encoding_type = f.get('encoding_type', None)
             
             # Создаем базовую рекомендацию
             if rule_name in recommendations:
@@ -116,20 +120,25 @@ async def upload_and_scan(file: Annotated[UploadFile, File(description="ZIP arch
                 )
             else:
                 recommendation = Recommendation(
-                    title=f"Исправьте {rule_name}",
-                    problem=f"Найден {rule_name} в коде",
-                    solution="Используйте переменные окружения или secrets manager",
+                    title=f"Удалите {rule_name} из кода",
+                    problem=f"В файле найден {rule_name}. Это может привести к утечке данных.",
+                    solution="Используйте переменные окружения (.env) или систему управления секретами (Vault).",
                     code_example=f"os.environ.get('{rule_name.upper().replace(' ', '_')}')"
                 )
             
+            # Собираем финальный объект Finding (ПЕРЕДАЕМ ВСЕ ПОЛЯ)
             finding = Finding(
                 id=i,
                 file_path=file_path,
                 line_number=line_number,
-                secret_type=rule_name,
+                secret_type=secret_type,
                 severity=determine_severity(risk_value, entropy),
                 matched_value=secret_masked,
-                recommendation=recommendation
+                recommendation=recommendation,
+                entropy=entropy,
+                encoding_type=encoding_type,
+                rule_name=rule_name,
+                line_content=line_content
             )
             findings.append(finding)
         
