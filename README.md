@@ -98,4 +98,3 @@ docker-compose run --rm backend python cli.py ./tests/test_samples
 ```bash
 docker-compose run --rm backend python cli.py ./tests/test_samples --format json
 ```
-```
