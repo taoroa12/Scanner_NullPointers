@@ -1,11 +1,27 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, AlertTriangle, ShieldCheck, ShieldAlert } from "lucide-react";
+import { AlertCircle, AlertTriangle, ShieldCheck, ShieldAlert, FileSearch, Fingerprint } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SummaryDashboard = ({ summary }: { summary: any }) => {
   const stats = [
+    {
+      label: "Всего файлов",
+      value: summary?.total_files_scanned ?? 0,
+      icon: FileSearch,
+      color: "text-slate-500",
+      bg: "bg-slate-500/10",
+      border: "border-slate-500/20"
+    },
+    {
+      label: "Всего угроз",
+      value: summary?.total_findings ?? 0,
+      icon: Fingerprint,
+      color: "text-purple-500",
+      bg: "bg-purple-500/10",
+      border: "border-purple-500/20"
+    },
     {
       label: "Critical",
       value: summary?.by_severity?.critical ?? 0,
@@ -41,7 +57,7 @@ const SummaryDashboard = ({ summary }: { summary: any }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       {stats.map((stat) => (
         <Card key={stat.label} className={cn("border-2 transition-all hover:scale-[1.02]", stat.border)}>
           <CardContent className="p-6">

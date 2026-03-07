@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Literal
+from typing import List, Literal, Optional
 import re
 
 from services.rules_manager import RulesManager
@@ -14,6 +14,8 @@ class RuleResponse(BaseModel):
     pattern: str
     severity: str
     is_custom: bool
+    description: Optional[str] = None
+    recommendation: Optional[str] = None
 
 class RuleCreate(BaseModel):
     name: str = Field(..., min_length=1)
@@ -42,7 +44,9 @@ async def get_all_rules():
             name=rule.name,
             pattern=rule.pattern,
             severity=severity_map.get(rule.risk_level.value, "medium"),
-            is_custom=rule.is_custom # Берем флаг прямо из менеджера
+            is_custom=rule.is_custom, # Берем флаг прямо из менеджера
+            description=rule.description,
+            recommendation=rule.recommendation
         ))
     
     return rules_response

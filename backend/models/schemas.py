@@ -28,6 +28,7 @@ class Rule(BaseModel):
     risk_level: RiskLevel = Field(RiskLevel.MEDIUM, description="Уровень риска")
     secret_type: SecretType = Field(SecretType.GENERIC, description="Тип секрета")
     description: Optional[str] = Field(None, description="Описание")
+    recommendation: Optional[str] = Field(None, description="Рекомендация")
     enabled: bool = Field(True, description="Активно/неактивно")
     entropy_threshold: Optional[float] = Field(None, description="Порог энтропии")
     is_custom: bool = Field(False, description="Пользовательское ли правило")

@@ -62,7 +62,7 @@ const GithubScanner: React.FC<GithubScannerProps> = ({ onUploaded }) => {
             onClick={handleScan} 
             disabled={isLoading}
             size="sm"
-            className="rounded-lg px-6 font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            className="rounded-lg px-6 curorsor-pointer font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
           >
             {isLoading ? (
               <>

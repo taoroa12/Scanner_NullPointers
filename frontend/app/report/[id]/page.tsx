@@ -1,7 +1,6 @@
-import React from "react";
 import { getScanReport } from "@/api/scan.api";
 import SummaryDashboard from "@/components/common/SummaryDashboard";
-import FindingsTable from "@/components/common/FindingsTable";
+import ReportContainer from "@/components/common/ReportContainer";
 import { Shield, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,7 @@ export default async function ReportPage({ params }: { params: { id: string } })
 
             <section className="space-y-6">
               <h2 className="text-xl font-bold">Обнаруженные уязвимости</h2>
-              <FindingsTable findings={report.findings} onOpen={() => {}} />
+              <ReportContainer findings={report.findings} projectName={report.project_name} />
             </section>
           </div>
         ) : (

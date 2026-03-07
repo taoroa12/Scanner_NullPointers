@@ -1,16 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import FileUploader from "@/components/common/FileUploader";
 import GithubScanner from "@/components/common/GithubScanner";
-import FindingsTable from "@/components/common/FindingsTable";
+import ReportContainer from "@/components/common/ReportContainer";
 import { getScanReport } from "@/api/scan.api";
 import SummaryDashboard from "@/components/common/SummaryDashboard";
 import { Shield, Zap, Lock, Search, FolderArchive, Github } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { type ScanResult } from "@/shared/types/scan.types";
 
 export default function ScanPage() {
-  const [report, setReport] = useState<any | null>(null);
-  const [openFinding, setOpenFinding] = useState(null);
+  const [report, setReport] = useState<ScanResult | null>(null);
 
   async function onUploaded(scanId: string) {
     try {
@@ -131,7 +131,7 @@ export default function ScanPage() {
             </div>
             
             <SummaryDashboard summary={report.summary} />
-            <FindingsTable findings={report.findings} onOpen={(f) => setOpenFinding(f)} />
+            <ReportContainer findings={report.findings} projectName={report.project_name} />
           </div>
         )}
       </div>

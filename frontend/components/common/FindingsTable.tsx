@@ -3,9 +3,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileCode, ExternalLink, ShieldAlert } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Finding } from "@/shared/types/finding.type";
 
-const FindingsTable = ({ findings, onOpen }: { findings: any[], onOpen: (f: any) => void }) => {
+const FindingsTable = ({ findings, onOpen }: { findings: Finding[], onOpen: (f: Finding) => void }) => {
   if (!findings || findings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-card/20 rounded-2xl border border-dashed border-border/40">
@@ -38,10 +38,13 @@ const FindingsTable = ({ findings, onOpen }: { findings: any[], onOpen: (f: any)
       
       <div className="space-y-3">
         {findings.map((f, idx) => (
-          <Card key={f.id || idx} className="group hover:border-primary/30 transition-all duration-300">
+          <Card 
+            key={f.id || idx} 
+            className="group hover:border-primary/30 transition-all duration-300 cursor-pointer active:scale-[0.99]"
+            onClick={() => onOpen(f)}
+          >
             <CardContent className="p-4 md:px-6">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                {/* File Path */}
                 <div className="col-span-1 md:col-span-5 flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-secondary/50 group-hover:bg-primary/10 transition-colors">
                     <FileCode className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -63,31 +66,25 @@ const FindingsTable = ({ findings, onOpen }: { findings: any[], onOpen: (f: any)
                   </span>
                 </div>
 
-                {/* Secret Type */}
                 <div className="col-span-1 md:col-span-3 flex items-center">
                   <Badge variant="outline" className="font-mono text-[10px] tracking-tight">
                     {f.secret_type}
                   </Badge>
                 </div>
 
-                {/* Severity */}
                 <div className="col-span-1 md:col-span-2 flex items-center">
                   <Badge variant={getSeverityVariant(f.severity)} className="capitalize">
                     {f.severity}
                   </Badge>
                 </div>
 
-                {/* Action */}
-                <div className="col-span-1 md:col-span-1 flex justify-end">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => onOpen(f)}
-                    className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
+                {/* <div className="col-span-1 md:col-span-1 flex justify-end">
+                  <div 
+                    className="p-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
                   >
                     <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </div>
+                  </div>
+                </div> */}
               </div>
             </CardContent>
           </Card>

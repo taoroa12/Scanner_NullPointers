@@ -47,6 +47,7 @@ class RulesManager:
                         risk_level=RiskLevel(rule_data['risk_level'].lower()),
                         secret_type=SecretType(secret_type_str),
                         description=rule_data.get('description', ''),
+                        recommendation=rule_data.get('recommendation', ''),
                         enabled=True,
                         entropy_threshold=rule_data.get('entropy_threshold'),
                         is_custom=False
