@@ -69,3 +69,7 @@ class ScanResult(BaseModel):
     project_name: str
     summary: ScanSummary
     findings: List[Finding]
+
+# === Request Models ===
+class RepoScanRequest(BaseModel):
+    repo_url: str = Field(..., description="Ссылка на публичный GitHub репозиторий")

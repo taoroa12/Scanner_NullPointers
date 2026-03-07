@@ -4,7 +4,8 @@ from typing import Annotated
 import uuid
 import os
 from datetime import datetime
-
+import requests
+from models.schemas import RepoScanRequest
 from services.file_handler import FileHandler
 from services.report_generator import ReportGenerator
 from services.rules_manager import RulesManager
@@ -129,7 +130,7 @@ async def upload_and_scan(file: Annotated[UploadFile, File(description="ZIP arch
             # Собираем финальный объект Finding (ПЕРЕДАЕМ ВСЕ ПОЛЯ)
             finding = Finding(
                 id=i,
-                file_path=file_path,
+                file_path=file_path.replace(str(extracted_dir), "").lstrip("\\/"),
                 line_number=line_number,
                 secret_type=secret_type,
                 severity=determine_severity(risk_value, entropy),
@@ -182,8 +183,126 @@ async def get_scan_report(scan_id: str):
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
     return scans_store[scan_id]
+@router.post("/github")
+async def scan_github_repo(req: RepoScanRequest):
+    """Скачивание и сканирование публичного репозитория GitHub"""
+    
+    # 1. Проверяем и форматируем ссылку
+    url = req.repo_url.strip()
+    if not url.startswith("https://github.com/"):
+        raise HTTPException(status_code=400, detail="Поддерживаются только ссылки на GitHub")
+    
+    # Превращаем ссылку на репо в ссылку на скачивание чистого ZIP-архива (без папки .git)
+        # Превращаем ссылку на репо в ссылку на скачивание чистого ZIP-архива (без папки .git)
+    if url.endswith("/"):
+        url = url[:-1]
+    zip_url = f"{url}/archive/HEAD.zip"
+    
+    scan_id = str(uuid.uuid4())[:8]
+    
+    try:
+        print(f"\n⬇️ Скачиваем репозиторий: {zip_url}")
+        
+        # 2. Скачиваем файл (с защитой от огромных репозиториев)
+        response = requests.get(zip_url, stream=True, timeout=15)
+        if response.status_code == 404:
+            zip_url = f"{url}/archive/refs/heads/master.zip"
+            print(f"⬇️ Ветка main не найдена. Пробуем master: {zip_url}")
+            response = requests.get(zip_url, stream=True, timeout=15)
+        
+        if response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Репозиторий не найден или является приватным")
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Ошибка при скачивании репозитория")
+        # Читаем байты (защита: лимит 100 МБ)
+        zip_content = bytearray()
+        MAX_SIZE = 100 * 1024 * 1024  # 100 MB
+        
+        for chunk in response.iter_content(chunk_size=8192):
+            zip_content.extend(chunk)
+            if len(zip_content) > MAX_SIZE:
+                raise HTTPException(status_code=413, detail="Репозиторий слишком большой (>100 МБ)")
 
+        # 3. Распаковываем скачанный архив
+        extracted_dir = file_handler.extract_zip(bytes(zip_content), scan_id)
+        files_to_scan = file_handler.collect_files(extracted_dir)
+        
+        # 4. Запускаем сканер
+        rules = rules_manager.get_enabled_rules()
+        if not rules:
+            rules = get_test_rules()
+            
+        scanner = SecretScanner(rules, use_entropy=True)
+        extensions = file_handler.get_supported_extensions()
+        findings_raw = scanner.scan_directory(extracted_dir, extensions=extensions)
+        recommendations = rules_manager.get_recommendations()
+        
+        # 5. Собираем результаты (тот же надежный маппинг, что и раньше)
+        findings = []
+        for i, f in enumerate(findings_raw, 1):
+            rule_name = f.get('rule_name', 'Unknown')
+            secret_type = f.get('secret_type', 'generic')
+            risk_value = f.get('risk_level', 'medium')
+            entropy = f.get('entropy', None)
+            
+            # Рекомендация
+            rec_text = recommendations.get(rule_name, "Используйте переменные окружения")
+            recommendation = Recommendation(
+                title=f"Проблема с {rule_name}",
+                problem="Найден секрет",
+                solution=rec_text[:200],
+                code_example="os.getenv('SECRET')"
+            )
+            
+            findings.append(Finding(
+                id=i,
+                file_path=f.get('file_path', 'unknown').replace(extracted_dir + os.sep, "").replace(extracted_dir + "/", "").replace(extracted_dir + "\\", ""),
+                line_number=f.get('line_number', 0),
+                secret_type=secret_type,
+                severity=determine_severity(risk_value, entropy),
+                matched_value=f.get('secret_masked', '***'),
+                recommendation=recommendation,
+                entropy=entropy,
+                encoding_type=f.get('encoding_type', None),
+                rule_name=rule_name,
+                line_content=f.get('line_content', '')
+            ))
+            
+        # 6. Статистика
+        by_severity = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        for f in findings:
+            by_severity[f.severity] = by_severity.get(f.severity, 0) + 1
+            
+        # Название проекта достаем из URL ссылки
+        project_name = req.repo_url.split("/")[-1]
+            
+        result = ScanResult(
+            scan_id=scan_id,
+            status="completed",
+            project_name=project_name,
+            summary=ScanSummary(
+                total_files_scanned=len(files_to_scan),
+                total_findings=len(findings),
+                by_severity=by_severity
+            ),
+            findings=findings
+        )
+        
+        scans_store[scan_id] = result
+        file_handler.cleanup(scan_id)
+        
+        print(f"✅ GitHub репозиторий {project_name} просканирован. Находок: {len(findings)}")
+        return {"scan_id": scan_id, "status": "completed", "findings_count": len(findings)}
+
+    except HTTPException:
+        file_handler.cleanup(scan_id)
+        raise
+    except Exception as e:
+        file_handler.cleanup(scan_id)
+        print(f"❌ Ошибка сканирования репозитория: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 @router.get("/{scan_id}/export")
+
 async def export_report(scan_id: str, format: str = "json"):
     """Экспорт в CSV или JSON."""
     if scan_id not in scans_store:
@@ -200,7 +319,7 @@ async def export_report(scan_id: str, format: str = "json"):
         )
     else:
         # Для формата JSON отдаем как ФАЙЛ для скачивания
-        json_data = result.model_dump_json() # сериализуем в строку Pydantic V2
+        json_data = result.model_dump_json(indent=2) # сериализуем в строку Pydantic V2
         return Response(
             content=json_data,
             media_type="application/json",
