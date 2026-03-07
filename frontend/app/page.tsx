@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import FileUploader from "@/components/common/FileUploader";
+import GithubScanner from "@/components/common/GithubScanner";
 import FindingsTable from "@/components/common/FindingsTable";
 import { getScanReport } from "@/api/scan.api";
 import SummaryDashboard from "@/components/common/SummaryDashboard";
-import { Shield, Zap, Lock, Search } from "lucide-react";
+import { Shield, Zap, Lock, Search, FolderArchive, Github } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function ScanPage() {
@@ -41,7 +42,32 @@ export default function ScanPage() {
               </p>
             </div>
 
-            <FileUploader onUploaded={(id) => onUploaded(id)} />
+            <div className="w-full max-w-3xl space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+              <div className="space-y-4">
+                <div className="flex items-center justify-center space-x-2 text-foreground/80 mb-2">
+                  <FolderArchive className="w-5 h-5" />
+                  <h2 className="text-xl font-bold">Локальный архив</h2>
+                </div>
+                <FileUploader onUploaded={(id) => onUploaded(id)} />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/40" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-4 text-muted-foreground/60 font-medium tracking-widest">или через GitHub</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-center space-x-2 text-foreground/80 mb-2">
+                  <Github className="w-5 h-5" />
+                  <h2 className="text-xl font-bold">Публичный репозиторий</h2>
+                </div>
+                <GithubScanner onUploaded={(id) => onUploaded(id)} />
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-16">
               <Card className="border-border/20 bg-card/20 hover:bg-card/40 transition-colors">
@@ -81,7 +107,6 @@ export default function ScanPage() {
               </Card>
             </div>
 
-            {/* Supported Files Footer */}
             <p className="text-xs text-muted-foreground/60 max-w-3xl leading-relaxed">
               Поддерживаемые файлы: .py, .js, .ts, .jsx, .tsx, .yaml, .yml, .env, .json, .xml, .sh, .cfg, .ini, .toml, .tf, .properties, .gradle, .rb, .go, .java, .php
             </p>

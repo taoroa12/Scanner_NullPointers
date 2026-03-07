@@ -15,3 +15,8 @@ export async function getScanReport(scan_id: string): Promise<ScanResult> {
   const resp = await axios.get<ScanResult>(`/api/scan/${encodeURIComponent(scan_id)}`);
   return resp.data;
 }
+
+export async function scanGithubRepo(repoUrl: string): Promise<{ scan_id: string; status: string; findings_count: number }> {
+  const resp = await axios.post("/api/scan/github", { repo_url: repoUrl });
+  return resp.data;
+}

@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
 import { UploadCloud, FileArchive, Loader2 } from "lucide-react";
 import { uploadAndScan } from "@/api/scan.api";
 import { cn } from "@/lib/utils";
 
-const FileUploader = ({ onUploaded }: { onUploaded: (scanId: string, findingsCount?: number) => void }) => {
+interface FileUploaderProps {
+  onUploaded: (scanId: string, findingsCount?: number) => void;
+}
+
+const FileUploader = ({ onUploaded }: FileUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -24,7 +28,7 @@ const FileUploader = ({ onUploaded }: { onUploaded: (scanId: string, findingsCou
     }
   }
 
-  const handleDrag = (e: React.DragEvent) => {
+  const handleDrag = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -34,7 +38,7 @@ const FileUploader = ({ onUploaded }: { onUploaded: (scanId: string, findingsCou
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -49,7 +53,7 @@ const FileUploader = ({ onUploaded }: { onUploaded: (scanId: string, findingsCou
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
