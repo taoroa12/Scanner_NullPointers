@@ -1,9 +1,9 @@
 # 🔍 Secret Scanner | Команда "NullPointers" (Кейс КРОК)
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-UI-black?logo=next.js&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.135.1-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14.0+-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 **Secret Scanner** — это комплексный DevSecOps-инструмент для автоматического поиска утечек чувствительных данных (API-ключей, паролей, токенов, приватных ключей) в исходном коде. 
 
