@@ -3,11 +3,11 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 
 from models.schemas import Rule, Finding, SecretType, RiskLevel
-from utils.masking import mask_secret
+from core.severity import mask_secret, determine_severity  # исправлен импорт
 from core.entropy import analyze_secret_entropy
 
 class SecretScanner:
@@ -45,9 +45,10 @@ class SecretScanner:
                 except re.error as e:
                     print(f"⚠️ Ошибка в regex правила '{rule.name}': {e}")
     
-    def scan_line(self, line: str, line_number: int, file_path: str) -> List[Finding]:
+    def scan_line(self, line: str, line_number: int, file_path: str) -> List[Dict[str, Any]]:
         """
         Сканирует одну строку на наличие секретов по всем правилам
+        ВОЗВРАЩАЕТ СЛОВАРЬ, а не Finding (чтобы избежать ошибок валидации)
         
         Args:
             line: текст строки
@@ -55,7 +56,7 @@ class SecretScanner:
             file_path: путь к файлу
             
         Returns:
-            List[Finding]: список найденных секретов в этой строке
+            List[Dict]: список найденных секретов в этой строке (как словари)
         """
         findings = []
         
@@ -102,21 +103,21 @@ class SecretScanner:
                     # Маскируем секрет
                     masked_value = mask_secret(secret_value)
                     
-                    # Создаем объект Finding
-                    finding = Finding(
-                        file_path=file_path,
-                        line_number=line_number,
-                        rule_name=rule_info["name"],
-                        secret_type=rule_info["secret_type"],
-                        risk_level=risk_level,
-                        secret_masked=masked_value,
-                        line_content=line.strip(),
-                        timestamp=datetime.now(),
-                        entropy=entropy_value,
-                        encoding_type=encoding_type
-                    )
+                    # ВОЗВРАЩАЕМ СЛОВАРЬ, а не Finding
+                    finding_dict = {
+                        "file_path": file_path,
+                        "line_number": line_number,
+                        "rule_name": rule_info["name"],
+                        "secret_type": rule_info["secret_type"].value,
+                        "risk_level": risk_level.value,
+                        "secret_masked": masked_value,
+                        "line_content": line.strip(),
+                        "timestamp": datetime.now().isoformat(),
+                        "entropy": entropy_value,
+                        "encoding_type": encoding_type
+                    }
                     
-                    findings.append(finding)
+                    findings.append(finding_dict)
                     
             except Exception as e:
                 print(f"   ⚠️ Ошибка при применении правила {rule_info['name']}: {e}")
@@ -124,7 +125,7 @@ class SecretScanner:
         
         return findings
     
-    def scan_file(self, file_path: str) -> List[Finding]:
+    def scan_file(self, file_path: str) -> List[Dict[str, Any]]:
         """
         Сканирует весь файл на наличие секретов
         
@@ -132,7 +133,7 @@ class SecretScanner:
             file_path: путь к файлу для сканирования
             
         Returns:
-            List[Finding]: список всех находок в файле
+            List[Dict]: список всех находок в файле (как словари)
         """
         all_findings = []
         file_path_obj = Path(file_path)
@@ -178,17 +179,16 @@ class SecretScanner:
         
         return all_findings
     
-    def scan_directory(self, directory_path: str, extensions: Optional[List[str]] = None) -> List[Finding]:
+    def scan_directory(self, directory_path: str, extensions: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
         Сканирует все файлы в директории
         
         Args:
             directory_path: путь к директории
-            extensions: список расширений для сканирования (например, ['.py', '.js'])
-                       если None - сканируются все текстовые файлы
+            extensions: список расширений для сканирования
             
         Returns:
-            List[Finding]: все находки в директории (всегда возвращает список)
+            List[Dict]: все находки в директории (всегда возвращает список словарей)
         """
         all_findings = []
         directory = Path(directory_path)
@@ -267,12 +267,12 @@ class SecretScanner:
         
         return all_findings  # Всегда возвращаем список
     
-    def get_statistics(self, findings: List[Finding]) -> Dict[str, Any]:
+    def get_statistics(self, findings: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Возвращает статистику по находкам
         
         Args:
-            findings: список находок
+            findings: список находок (словарей)
             
         Returns:
             Dict со статистикой
@@ -291,17 +291,20 @@ class SecretScanner:
         
         for finding in findings:
             # По уровням риска
-            stats['by_risk'][finding.risk_level.value] = stats['by_risk'].get(finding.risk_level.value, 0) + 1
+            risk = finding.get('risk_level', 'low')
+            stats['by_risk'][risk] = stats['by_risk'].get(risk, 0) + 1
             
             # По типам секретов
-            secret_type = finding.secret_type.value
+            secret_type = finding.get('secret_type', 'unknown')
             stats['by_type'][secret_type] = stats['by_type'].get(secret_type, 0) + 1
             
             # По файлам
-            stats['by_file'][finding.file_path] = stats['by_file'].get(finding.file_path, 0) + 1
+            file_path = finding.get('file_path', 'unknown')
+            stats['by_file'][file_path] = stats['by_file'].get(file_path, 0) + 1
             
             # Высокая энтропия
-            if finding.entropy and finding.entropy > 4.5:
+            entropy = finding.get('entropy')
+            if entropy and entropy > 4.5:
                 stats['high_entropy'] += 1
         
         return stats
@@ -337,4 +340,4 @@ if __name__ == "__main__":
     
     print(f"Найдено секретов: {len(findings)}")
     for f in findings:
-        print(f"  - {f.rule_name}: {f.secret_masked}")
+        print(f"  - {f['rule_name']}: {f['secret_masked']} (риск: {f['risk_level']})")
