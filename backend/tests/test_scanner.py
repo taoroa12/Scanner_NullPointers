@@ -49,9 +49,9 @@ class TestSecretScanner(unittest.TestCase):
         self.assertTrue(github_found, "GitHub токен не найден")
         
         # Проверяем Stripe ключ
-        stripe_found = any("sk_live" in f['secret_masked'] for f in findings)
+        stripe_found = any(f['rule_name'] == "Stripe Live Key" for f in findings)
         self.assertTrue(stripe_found, "Stripe ключ не найден")
-        
+            
         print(f"\n✅ Найдено секретов: {len(findings)}")
         for f in findings:
             print(f"   - {f['rule_name']}: {f['secret_masked']} (строка {f['line_number']})")
