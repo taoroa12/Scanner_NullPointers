@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Literal
-import uuid
 import re
 
 from services.rules_manager import RulesManager
@@ -23,61 +22,67 @@ class RuleCreate(BaseModel):
 
 @router.get("/", response_model=List[RuleResponse])
 async def get_all_rules():
-    """Возвращает все активные правила (системные + кастомные)"""
+    """Возвращает все активные правила (Системные + Кастомные из YAML)"""
+    # Обновляем кастомные правила с диска перед выдачей
+    rules_manager.load_custom_rules()
     all_rules = rules_manager.get_enabled_rules()
+    
     rules_response = []
     
     for rule in all_rules:
-        # Конвертируем RiskLevel в severity
+        # Конвертируем RiskLevel (enum) в строку severity для фронтенда
         severity_map = {
-            "high": "high",
+            "high": "critical" if rule.name == "AWS Access Key ID" else "high",
             "medium": "medium",
             "low": "low"
         }
         
-        # Специфичный маппинг для некоторых системных правил
-        severity = severity_map.get(rule.risk_level.value, "medium")
-        if rule.name == "AWS Access Key ID":
-            severity = "critical"
-        
         rules_response.append(RuleResponse(
-            id=rule.id,
+            id=rule.id,  # Теперь берем настоящий ID прямо из менеджера!
             name=rule.name,
             pattern=rule.pattern,
-            severity=severity,
-            is_custom=rule.is_custom
+            severity=severity_map.get(rule.risk_level.value, "medium"),
+            is_custom=rule.is_custom # Берем флаг прямо из менеджера
         ))
     
     return rules_response
 
 @router.post("/", response_model=RuleResponse)
 async def add_custom_rule(rule_data: RuleCreate):
-    """Добавляет пользовательское правило и сохраняет его в YAML"""
-    if not rules_manager.validate_pattern(rule_data.pattern):
+    """Добавляет пользовательское правило и сохраняет в custom_rules.yaml"""
+    try:
+        re.compile(rule_data.pattern)
+    except re.error:
         raise HTTPException(status_code=400, detail="Invalid Regex pattern")
     
+    # Вызываем правильную функцию из вашего нового RulesManager
     new_rule = rules_manager.add_custom_rule(
         name=rule_data.name,
         pattern=rule_data.pattern,
         severity=rule_data.severity
     )
     
+    # Формируем ответ для фронтенда
+    severity_map = {"high": "high", "medium": "medium", "low": "low"}
+    
     return RuleResponse(
         id=new_rule.id,
         name=new_rule.name,
         pattern=new_rule.pattern,
-        severity=rule_data.severity,
+        severity=severity_map.get(new_rule.risk_level.value, "medium"),
         is_custom=True
     )
 
 @router.delete("/{rule_id}")
 async def delete_rule(rule_id: str):
-    """Удаляет пользовательское правило"""
+    """Удаляет правило из custom_rules.yaml по ID"""
     if rule_id.startswith("sys-"):
-        raise HTTPException(status_code=400, detail="Cannot delete system rules")
+        raise HTTPException(status_code=400, detail="Нельзя удалять системные правила")
     
-    success = rules_manager.delete_custom_rule(rule_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Rule not found or already deleted")
+    # Вызываем правильную функцию удаления по ID
+    deleted = rules_manager.delete_custom_rule(rule_id)
+    
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Кастомное правило не найдено")
     
     return {"status": "deleted", "id": rule_id}
