@@ -76,9 +76,11 @@ def main():
         print(f"{Colors.OKGREEN}✅ Поздравляем! Секретов не найдено. Код чист.{Colors.ENDC}")
         sys.exit(0)
 
-    # Статистика
-    critical_count = sum(1 for f in findings_raw if determine_severity(f.get('risk_level'), f.get('entropy')) == 'critical')
-    high_count = sum(1 for f in findings_raw if determine_severity(f.get('risk_level'), f.get('entropy')) == 'high')
+       # Статистика (считаем все 4 уровня)
+    critical_count = 0
+    high_count = 0
+    medium_count = 0
+    low_count = 0
     
     print(f"\n{Colors.HEADER}{Colors.BOLD}🚨 РЕЗУЛЬТАТЫ СКАНИРОВАНИЯ:{Colors.ENDC}")
     
@@ -87,28 +89,38 @@ def main():
         file_p = f.get('file_path', 'unknown')
         line = f.get('line_number', 0)
         secret = f.get('secret_masked', '***')
-        risk = f.get('risk_level', 'medium').upper()
         entropy = f.get('entropy')
 
-        # Выбираем цвет
-        color = Colors.WARNING
-        if risk in ['CRITICAL', 'HIGH']:
+        # ✅ Используем финальную критичность (с учетом энтропии)
+        severity = determine_severity(f.get('risk_level', 'low'), entropy).upper()
+
+        # Выбираем цвет и считаем статистику
+        if severity == 'CRITICAL':
+            critical_count += 1
             color = Colors.FAIL
-        elif risk == 'LOW':
+        elif severity == 'HIGH':
+            high_count += 1
+            color = Colors.WARNING
+        elif severity == 'MEDIUM':
+            medium_count += 1
+            color = Colors.OKCYAN
+        else:
+            low_count += 1
             color = Colors.OKBLUE
 
         ent_text = f" (Энтропия: {entropy:.2f})" if entropy else ""
         
-        print(f"{color}[{risk}] {rule_name}{Colors.ENDC}")
+        print(f"{color}[{severity}] {rule_name}{Colors.ENDC}")
         print(f"  📍 Файл:   {file_p}:{line}")
         print(f"  🔑 Секрет: {secret}{ent_text}")
         print("-" * 50)
 
     print(f"\n{Colors.BOLD}📊 ИТОГО:{Colors.ENDC}")
     print(f"Всего находок: {len(findings_raw)}")
-    print(f"Из них CRITICAL: {Colors.FAIL}{critical_count}{Colors.ENDC}")
-    print(f"Из них HIGH:     {Colors.WARNING}{high_count}{Colors.ENDC}")
-
+    print(f"🔴 CRITICAL: {Colors.FAIL}{critical_count}{Colors.ENDC}")
+    print(f"🟠 HIGH:     {Colors.WARNING}{high_count}{Colors.ENDC}")
+    print(f"🟡 MEDIUM:   {Colors.OKCYAN}{medium_count}{Colors.ENDC}")
+    print(f"🟢 LOW:      {Colors.OKBLUE}{low_count}{Colors.ENDC}")
 if __name__ == "__main__":
     if os.name == 'nt':
         os.system('color')
