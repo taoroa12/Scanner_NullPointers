@@ -302,9 +302,8 @@ async def scan_github_repo(req: RepoScanRequest):
         print(f"❌ Ошибка сканирования репозитория: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 @router.get("/{scan_id}/export")
-
 async def export_report(scan_id: str, format: str = "json"):
-    """Экспорт в CSV или JSON."""
+    """Экспорт в CSV, JSON или формат для Vault/Env."""
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
         
@@ -317,9 +316,26 @@ async def export_report(scan_id: str, format: str = "json"):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment; filename=report_{scan_id}.csv"}
         )
+        
+    elif format.lower() == "vault":
+        # Экспорт ключей для HashiCorp Vault / AWS Secrets Manager
+        # Формат: {"название_секрета": "замаскированное_значение"}
+        vault_data = {}
+        for i, f in enumerate(result.findings):
+            # Делаем уникальный ключ, если в проекте несколько одинаковых секретов
+            safe_key = f.rule_name.upper().replace(" ", "_").replace("-", "_")
+            vault_data[f"{safe_key}_{i}"] = f.matched_value
+            
+        import json
+        return Response(
+            content=json.dumps(vault_data, indent=2, ensure_ascii=False),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=vault_import_{scan_id}.json"}
+        )
+        
     else:
-        # Для формата JSON отдаем как ФАЙЛ для скачивания
-        json_data = result.model_dump_json(indent=2) # сериализуем в строку Pydantic V2
+        # Стандартный полный JSON отчет
+        json_data = result.model_dump_json(indent=2) 
         return Response(
             content=json_data,
             media_type="application/json",
