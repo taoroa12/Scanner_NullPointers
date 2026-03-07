@@ -29,11 +29,15 @@ class RulesManager:
             self.rules = []
             for rule_data in rules_data:
                 try:
+                    # Преобразуем secret_type в нижний регистр
+                    secret_type_raw = rule_data.get('secret_type', 'GENERIC')
+                    secret_type_str = secret_type_raw.lower()
+                    
                     rule = Rule(
                         name=rule_data['name'],
                         pattern=rule_data['pattern'],
                         risk_level=RiskLevel(rule_data['risk_level'].lower()),
-                        secret_type=SecretType(rule_data.get('secret_type', 'generic')),
+                        secret_type=SecretType(secret_type_str),
                         description=rule_data.get('description', ''),
                         enabled=True,
                         entropy_threshold=rule_data.get('entropy_threshold')
