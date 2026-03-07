@@ -22,6 +22,7 @@ class SecretType(str, Enum):
 # === Rule ===
 class Rule(BaseModel):
     """Правило для поиска секретов"""
+    id: Optional[str] = Field(None, description="ID правила")
     name: str = Field(..., description="Название правила")
     pattern: str = Field(..., description="Регулярное выражение")
     risk_level: RiskLevel = Field(RiskLevel.MEDIUM, description="Уровень риска")
@@ -29,6 +30,7 @@ class Rule(BaseModel):
     description: Optional[str] = Field(None, description="Описание")
     enabled: bool = Field(True, description="Активно/неактивно")
     entropy_threshold: Optional[float] = Field(None, description="Порог энтропии")
+    is_custom: bool = Field(False, description="Пользовательское ли правило")
 
 # === Recommendation ===
 class Recommendation(BaseModel):

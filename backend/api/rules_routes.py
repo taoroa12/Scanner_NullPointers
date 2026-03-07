@@ -23,49 +23,61 @@ class RuleCreate(BaseModel):
 
 @router.get("/", response_model=List[RuleResponse])
 async def get_all_rules():
-    """Возвращает все активные правила из YAML"""
-    yaml_rules = rules_manager.get_enabled_rules()
+    """Возвращает все активные правила (системные + кастомные)"""
+    all_rules = rules_manager.get_enabled_rules()
     rules_response = []
     
-    for i, rule in enumerate(yaml_rules, start=1):
+    for rule in all_rules:
         # Конвертируем RiskLevel в severity
         severity_map = {
-            "high": "critical" if rule.name == "AWS Access Key ID" else "high",
+            "high": "high",
             "medium": "medium",
             "low": "low"
         }
         
+        # Специфичный маппинг для некоторых системных правил
+        severity = severity_map.get(rule.risk_level.value, "medium")
+        if rule.name == "AWS Access Key ID":
+            severity = "critical"
+        
         rules_response.append(RuleResponse(
-            id=f"sys-{i}",
+            id=rule.id,
             name=rule.name,
             pattern=rule.pattern,
-            severity=severity_map.get(rule.risk_level.value, "medium"),
-            is_custom=False
+            severity=severity,
+            is_custom=rule.is_custom
         ))
     
     return rules_response
 
 @router.post("/", response_model=RuleResponse)
 async def add_custom_rule(rule_data: RuleCreate):
-    """Добавляет пользовательское правило (моковое сохранение для фронтенда)"""
-    try:
-        re.compile(rule_data.pattern)
-    except re.error:
+    """Добавляет пользовательское правило и сохраняет его в YAML"""
+    if not rules_manager.validate_pattern(rule_data.pattern):
         raise HTTPException(status_code=400, detail="Invalid Regex pattern")
     
-    new_rule = RuleResponse(
-        id=f"cust-{str(uuid.uuid4())[:6]}",
+    new_rule = rules_manager.add_custom_rule(
         name=rule_data.name,
         pattern=rule_data.pattern,
+        severity=rule_data.severity
+    )
+    
+    return RuleResponse(
+        id=new_rule.id,
+        name=new_rule.name,
+        pattern=new_rule.pattern,
         severity=rule_data.severity,
         is_custom=True
     )
-    return new_rule
 
 @router.delete("/{rule_id}")
 async def delete_rule(rule_id: str):
-    """Удаляет правило (только кастомные)"""
+    """Удаляет пользовательское правило"""
     if rule_id.startswith("sys-"):
         raise HTTPException(status_code=400, detail="Cannot delete system rules")
+    
+    success = rules_manager.delete_custom_rule(rule_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Rule not found or already deleted")
     
     return {"status": "deleted", "id": rule_id}
