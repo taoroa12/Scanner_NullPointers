@@ -36,8 +36,14 @@ def main():
     parser = argparse.ArgumentParser(description="Локальный сканер секретов в коде.")
     parser.add_argument("path", help="Путь к папке или файлу для сканирования (например: . или ./my_project)")
     parser.add_argument("--format", choices=['text', 'json'], default='text', help="Формат вывода (text или json)")
+    parser.add_argument("--no-color", action="store_true", help="Отключить цветной вывод (для логов)")
     
     args = parser.parse_args()
+    # Если просят выключить цвета - зануляем все ANSI коды в классе Colors
+    if args.no_color:
+        for attr in dir(Colors):
+            if not attr.startswith('__'):
+                setattr(Colors, attr, '')
     scan_path = Path(args.path)
 
     if not scan_path.exists():

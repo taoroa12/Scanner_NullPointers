@@ -38,14 +38,26 @@ class FileHandler:
         return extract_path
 
     def collect_files(self, root_dir: str) -> list[str]:
-        """Сбор всех путей к текстовым файлам (коду)."""
         files_to_scan = []
+        ignore_patterns = set()
+        
+        # 1. Ищем .secretignore в корне
+        ignore_file = os.path.join(root_dir, ".secretignore")
+        if os.path.exists(ignore_file):
+            with open(ignore_file, 'r', encoding='utf-8') as f:
+                ignore_patterns = {line.strip() for line in f if line.strip() and not line.startswith('#')}
+
         for dirpath, dirnames, filenames in os.walk(root_dir):
-            # Модифицируем список dirnames, чтобы os.walk не заходил в исключенные папки
             dirnames[:] = [d for d in dirnames if d not in self.EXCLUDED_DIRS]
             
             for file in filenames:
                 file_path = os.path.join(dirpath, file)
+                rel_path = os.path.relpath(file_path, root_dir).replace('\\', '/')
+                
+                # 2. Проверяем, нет ли файла в игнор-листе
+                if any(p in rel_path for p in ignore_patterns):
+                    continue
+                    
                 if not self.is_binary(file_path):
                     files_to_scan.append(file_path)
                     

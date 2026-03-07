@@ -77,7 +77,13 @@ class SecretScanner:
                     # Пропускаем слишком короткие строки
                     if len(secret_value) < 4:
                         continue
-                    
+                    # Пропускаем строки, которые выглядят как URL или содержат подозрительные параметры (часто ложные срабатывания)
+                    if "High Entropy" in rule_info["name"]:
+                        line_lower = line.lower()
+                        # Игнорируем Markdown-ссылки, обычные урлы и google-трекинг
+                        if "http://" in line_lower or "https://" in line_lower or "srsltid=" in line_lower:
+                            continue
+
                     # Анализ энтропии (если включен)
                     entropy_value = None
                     encoding_type = None
