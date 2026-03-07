@@ -62,7 +62,11 @@ export default async function ReportPage({ params }: { params: { id: string } })
 
             <section className="space-y-6">
               <h2 className="text-xl font-bold">Обнаруженные уязвимости</h2>
-              <ReportContainer findings={report.findings} projectName={report.project_name} />
+              <ReportContainer 
+                findings={report.findings} 
+                projectName={report.project_name} 
+                scanId={id}
+              />
             </section>
           </div>
         ) : (

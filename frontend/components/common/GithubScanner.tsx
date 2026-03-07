@@ -33,7 +33,8 @@ const GithubScanner: React.FC<GithubScannerProps> = ({ onUploaded }) => {
       onUploaded(result.scan_id);
     } catch (err: any) {
       console.error("GitHub scan error:", err);
-      const detail = err.response?.data?.detail || "Ошибка при сканировании репозитория";
+      const detail =
+        err.response?.data?.detail || "Ошибка при сканировании репозитория";
       setError(detail);
     } finally {
       setIsLoading(false);
@@ -58,11 +59,11 @@ const GithubScanner: React.FC<GithubScannerProps> = ({ onUploaded }) => {
             className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm h-9 px-2"
             disabled={isLoading}
           />
-          <Button 
-            onClick={handleScan} 
+          <Button
+            onClick={handleScan}
             disabled={isLoading}
             size="sm"
-            className="rounded-lg px-6 curorsor-pointer font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            className="rounded-lg px-6 cursor-pointer font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
           >
             {isLoading ? (
               <>

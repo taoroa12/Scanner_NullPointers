@@ -8,6 +8,7 @@ import SummaryDashboard from "@/components/common/SummaryDashboard";
 import { Shield, Zap, Lock, Search, FolderArchive, Github } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { type ScanResult } from "@/shared/types/scan.types";
+import { Button } from "@/components/ui/button";
 
 export default function ScanPage() {
   const [report, setReport] = useState<ScanResult | null>(null);
@@ -38,7 +39,8 @@ export default function ScanPage() {
                 Secret Scanner
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-                Обнаружение утечек API-ключей, токенов, паролей и приватных ключей в исходном коде
+                Обнаружение утечек API-ключей, токенов, паролей и приватных
+                ключей в исходном коде
               </p>
             </div>
 
@@ -56,7 +58,9 @@ export default function ScanPage() {
                   <span className="w-full border-t border-border/40" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-4 text-muted-foreground/60 font-medium tracking-widest">или через GitHub</span>
+                  <span className="bg-background px-4 text-muted-foreground/60 font-medium tracking-widest">
+                    или через GitHub
+                  </span>
                 </div>
               </div>
 
@@ -108,7 +112,9 @@ export default function ScanPage() {
             </div>
 
             <p className="text-xs text-muted-foreground/60 max-w-3xl leading-relaxed">
-              Поддерживаемые файлы: .py, .js, .ts, .jsx, .tsx, .yaml, .yml, .env, .json, .xml, .sh, .cfg, .ini, .toml, .tf, .properties, .gradle, .rb, .go, .java, .php
+              Поддерживаемые файлы: .py, .js, .ts, .jsx, .tsx, .yaml, .yml,
+              .env, .json, .xml, .sh, .cfg, .ini, .toml, .tf, .properties,
+              .gradle, .rb, .go, .java, .php
             </p>
           </div>
         ) : (
@@ -119,19 +125,26 @@ export default function ScanPage() {
                   Результат сканирования
                 </h2>
                 <p className="text-muted-foreground mt-1">
-                  Проект: <span className="text-foreground font-medium">{report.project_name}</span>
+                  Проект:{" "}
+                  <span className="text-foreground font-medium">
+                    {report.project_name}
+                  </span>
                 </p>
               </div>
-              <button 
+              <Button
                 onClick={() => setReport(null)}
-                className="text-sm font-medium text-primary hover:underline"
+                className="rounded-lg px-6 cursor-pointer font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Сканировать другой проект
-              </button>
+              </Button>
             </div>
-            
+
             <SummaryDashboard summary={report.summary} />
-            <ReportContainer findings={report.findings} projectName={report.project_name} />
+            <ReportContainer
+              findings={report.findings}
+              projectName={report.project_name}
+              scanId={report.scan_id}
+            />
           </div>
         )}
       </div>
