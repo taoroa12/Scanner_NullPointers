@@ -1,0 +1,5 @@
+{
+  "name": "Custom API Key Test",
+  "pattern": "CUSTOM-API-KEY-[A-Z0-9-]{20,}",
+  "severity": "high"
+}
