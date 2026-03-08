@@ -1,9 +1,0 @@
-- name: "Custom API Key Test"
-  pattern: "CUSTOM-API-KEY-[A-Z0-9-]{20,}"
-  risk_level: "HIGH"
-  secret_type: "AWS_KEY"
-  description: "Custom API Key"
-  recommendation: | 
-    - Rotate the API key immediately.
-    - Review access logs for any unauthorized activity.
-    - Implement stricter access controls and monitoring for API keys.
